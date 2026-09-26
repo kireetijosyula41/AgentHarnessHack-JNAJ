@@ -10,6 +10,7 @@ import {
 } from "../../src/antibody/index.ts";
 
 const policy: HarnessPolicy = {
+  version: 1,
   untrustedContentCanAuthorizeTools: false,
   toolRules: {
     get_sensitive_record: {},

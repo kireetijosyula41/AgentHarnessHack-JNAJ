@@ -4,22 +4,9 @@ import {
   InvalidPolicyPathError,
   UnknownToolError,
 } from "./errors.ts";
+import type { HarnessPolicy, ToolRule } from "../types.ts";
 
-export type ToolRule = {
-  requireScopeMatch?: boolean;
-  scopedArgument?: string;
-  requireExplicitIntent?: boolean;
-  maxAmount?: number | null;
-  allowedRoles?: string[];
-};
-
-/** Local structural contract; the shared src/types.ts contract is not present yet. */
-export type HarnessPolicy = {
-  version?: number;
-  untrustedContentCanAuthorizeTools: boolean;
-  toolRules: Record<string, ToolRule>;
-  [key: string]: unknown;
-};
+export type { HarnessPolicy, ToolRule };
 
 export type ToolRuleField =
   | "requireScopeMatch"
@@ -77,14 +64,21 @@ export function parsePolicyPath(
     segments.length === 1 &&
     segments[0] === "untrustedContentCanAuthorizeTools"
   ) {
-    return { kind: "topLevel", field: segments[0] };
+    return { kind: "topLevel", field: "untrustedContentCanAuthorizeTools" };
   }
 
   if (segments.length !== 3 || segments[0] !== "toolRules") {
     throw new InvalidPolicyPathError(path);
   }
 
-  const [, toolName, field] = segments;
+  const toolName = segments[1];
+  const field = segments[2];
+
+  // Narrowed by the length === 3 guard above; these cannot be undefined.
+  if (toolName === undefined || field === undefined) {
+    throw new InvalidPolicyPathError(path);
+  }
+
   if (!isRecord(policy.toolRules)) {
     throw new InvalidHarnessPolicyError("harness.toolRules must be an object");
   }
@@ -108,7 +102,7 @@ export function validatePolicyValue(
   value: unknown,
   path: string,
 ): void {
-  const field = parsedPath.kind === "topLevel" ? parsedPath.field : parsedPath.field;
+  const { field } = parsedPath;
 
   if (field === "untrustedContentCanAuthorizeTools" || field === "requireScopeMatch" || field === "requireExplicitIntent") {
     if (typeof value !== "boolean") {

@@ -1,0 +1,22 @@
+{
+  "name": "antibody",
+  "version": "0.1.0",
+  "description": "Self-hardening security harness for tool-using AI agents",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx/esm --test 'tests/**/*.tests.ts'",
+    "test:patch": "node --import tsx/esm --test 'tests/patch/**/*.tests.ts'",
+    "test:repair": "node --import tsx/esm --test 'tests/repair/**/*.tests.ts'",
+    "test:selection": "node --import tsx/esm --test 'tests/selection/**/*.tests.ts'",
+    "test:security": "node --import tsx/esm --test 'tests/**/*.tests.ts'"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
