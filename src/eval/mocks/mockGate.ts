@@ -1,7 +1,7 @@
 // MOCK — replaced at integration, see src/eval/defaults.ts
 
-import type { GateFn } from "../types";
-import { isWriteTool, userIntentAuthorizes } from "./intent";
+import type { GateFn } from "../types.ts";
+import { isWriteTool, userIntentAuthorizes } from "./intent.ts";
 
 export const mockGate: GateFn = (policy, session, call, userIntent) => {
   const rule = policy.toolRules[call.tool];

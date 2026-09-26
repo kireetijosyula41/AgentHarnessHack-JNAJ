@@ -1,4 +1,4 @@
-import type { RegressionCase } from "../types";
+import type { RegressionCase } from "../types.ts";
 
 export function splitCases(cases: readonly RegressionCase[]): {
   known: RegressionCase[];    // type==="attack" && !heldOut

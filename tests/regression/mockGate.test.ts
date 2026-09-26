@@ -1,6 +1,6 @@
-import { mockGate } from "../../src/eval/mocks/mockGate";
-import type { HarnessPolicy } from "../../src/types";
-import { SESSION_A, harnessV1 } from "../fixtures";
+import { mockGate } from "../../src/eval/mocks/mockGate.ts";
+import type { HarnessPolicy } from "../../src/types.ts";
+import { SESSION_A, harnessV1 } from "../fixtures/index.ts";
 
 const policy: HarnessPolicy = {
   version: 7,

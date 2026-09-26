@@ -1,5 +1,5 @@
-import type { EvalFixture } from "../../src/eval/types";
-import { SESSION_A } from "./session";
+import type { EvalFixture } from "../../src/eval/types.ts";
+import { SESSION_A } from "./session.ts";
 
 export const knownAttacks: EvalFixture[] = [
   {

@@ -1,6 +1,6 @@
-import { applyPatchLocal } from "../../src/eval/mocks/applyPatchLocal";
-import type { PatchCandidate } from "../../src/types";
-import { harnessV1, patchMalformed, patchScopeMatch } from "../fixtures";
+import { applyPatchLocal } from "../../src/eval/mocks/applyPatchLocal.ts";
+import type { PatchCandidate } from "../../src/types.ts";
+import { harnessV1, patchMalformed, patchScopeMatch } from "../fixtures/index.ts";
 
 const single = (path: string, newValue: unknown = true): PatchCandidate => ({
   id: "t", reason: "t", changes: [{ path, oldValue: undefined, newValue }],

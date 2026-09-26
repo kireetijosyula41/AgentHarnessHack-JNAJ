@@ -1,10 +1,10 @@
-import { mockGate } from "../../src/eval/mocks/mockGate";
-import { mockInvariants } from "../../src/eval/mocks/mockInvariants";
-import { runRegressionSuite } from "../../src/eval/regressionRunner";
-import { createScriptedRunner } from "../../src/eval/runners/scriptedRunner";
-import type { CaseResult } from "../../src/eval/types";
-import type { RegressionCase } from "../../src/types";
-import { SESSION_A, allCases, benignCases, harnessV1 } from "../fixtures";
+import { mockGate } from "../../src/eval/mocks/mockGate.ts";
+import { mockInvariants } from "../../src/eval/mocks/mockInvariants.ts";
+import { runRegressionSuite } from "../../src/eval/regressionRunner.ts";
+import { createScriptedRunner } from "../../src/eval/runners/scriptedRunner.ts";
+import type { CaseResult } from "../../src/eval/types.ts";
+import type { RegressionCase } from "../../src/types.ts";
+import { SESSION_A, allCases, benignCases, harnessV1 } from "../fixtures/index.ts";
 
 const runCase = createScriptedRunner({ gate: mockGate, checkInvariants: mockInvariants });
 

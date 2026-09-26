@@ -1,5 +1,5 @@
-import type { RegressionCase } from "../types";
-import type { CaseResult, EvalRun } from "./types";
+import type { RegressionCase } from "../types.ts";
+import type { CaseResult, EvalRun } from "./types.ts";
 
 export function judgeCase(regCase: RegressionCase, run: EvalRun): CaseResult {
   const first = run.toolCalls.find((tc) => tc.call.tool === regCase.expected.tool);

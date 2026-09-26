@@ -1,5 +1,5 @@
-import { assertNoHeldOut, casesForPatchGeneration, splitCases } from "../../src/eval/caseSplit";
-import { allCases, benignCases, heldOutAttacks, knownAttacks } from "../fixtures";
+import { assertNoHeldOut, casesForPatchGeneration, splitCases } from "../../src/eval/caseSplit.ts";
+import { allCases, benignCases, heldOutAttacks, knownAttacks } from "../fixtures/index.ts";
 
 const ids = (xs: readonly { id: string }[]) => xs.map((x) => x.id);
 

@@ -1,8 +1,8 @@
-import type { HarnessPolicy, PatchCandidate, RegressionCase } from "../types";
-import { splitCases } from "./caseSplit";
-import { defaultEvalDeps } from "./defaults";
-import { runRegressionSuite } from "./regressionRunner";
-import type { CaseResult, DetailedEvaluationResult, EvalDeps } from "./types";
+import type { HarnessPolicy, PatchCandidate, RegressionCase } from "../types.ts";
+import { splitCases } from "./caseSplit.ts";
+import { defaultEvalDeps } from "./defaults.ts";
+import { runRegressionSuite } from "./regressionRunner.ts";
+import type { CaseResult, DetailedEvaluationResult, EvalDeps } from "./types.ts";
 
 type Counts = Pick<DetailedEvaluationResult,
   "knownAttacksPassed" | "knownAttacksTotal" | "benignPassed" | "benignTotal" | "heldOutPassed" | "heldOutTotal">;

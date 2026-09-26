@@ -1,5 +1,5 @@
-import { evaluateCandidate, formatEvaluation } from "../../src/eval";
-import { allCases, harnessV1, patchMalformed, patchScopeMatch } from "../fixtures";
+import { evaluateCandidate, formatEvaluation } from "../../src/eval/index.ts";
+import { allCases, harnessV1, patchMalformed, patchScopeMatch } from "../fixtures/index.ts";
 
 describe("formatEvaluation", () => {
   it("formats a valid patch", async () => {

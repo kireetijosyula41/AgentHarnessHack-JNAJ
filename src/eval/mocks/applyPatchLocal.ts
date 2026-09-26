@@ -1,7 +1,7 @@
 // MOCK — replaced at integration, see src/eval/defaults.ts
 
-import type { HarnessPolicy } from "../../types";
-import type { ApplyPatchFn } from "../types";
+import type { HarnessPolicy } from "../../types.ts";
+import type { ApplyPatchFn } from "../types.ts";
 
 const FORBIDDEN_SEGMENTS = new Set(["__proto__", "prototype", "constructor"]);
 const PATCHABLE_RULE_FIELDS = new Set([

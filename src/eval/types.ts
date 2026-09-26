@@ -1,7 +1,7 @@
 import type {
   EvaluationResult, GateResult, HarnessPolicy, PatchCandidate,
   ProposedToolCall, RegressionCase, SessionScope,
-} from "../types";
+} from "../types.ts";
 
 /** One proposed tool call plus the gate's decision on it. */
 export type EvaluatedToolCall = { call: ProposedToolCall; gate: GateResult };

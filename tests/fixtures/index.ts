@@ -1,10 +1,10 @@
-import type { EvalFixture } from "../../src/eval/types";
-import { benignCases as rawBenign } from "./benignCases";
-import { harnessV1 as rawHarnessV1 } from "./harnessV1";
-import { heldOutAttacks as rawHeldOut } from "./heldOutAttacks";
-import { knownAttacks as rawKnown } from "./knownAttacks";
-import * as rawPatches from "./patchCandidates";
-import { SESSION_A as rawSessionA } from "./session";
+import type { EvalFixture } from "../../src/eval/types.ts";
+import { benignCases as rawBenign } from "./benignCases.ts";
+import { harnessV1 as rawHarnessV1 } from "./harnessV1.ts";
+import { heldOutAttacks as rawHeldOut } from "./heldOutAttacks.ts";
+import { knownAttacks as rawKnown } from "./knownAttacks.ts";
+import * as rawPatches from "./patchCandidates.ts";
+import { SESSION_A as rawSessionA } from "./session.ts";
 
 export function deepFreeze<T>(x: T): T {
   if (x !== null && typeof x === "object" && !Object.isFrozen(x)) {

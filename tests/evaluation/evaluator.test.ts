@@ -1,12 +1,12 @@
 import { vi } from "vitest";
-import { evaluateCandidates, evaluateHarness } from "../../src/eval";
-import type { ApplyPatchFn, DetailedEvaluationResult, EvalDeps } from "../../src/eval";
-import { applyPatchLocal } from "../../src/eval/mocks/applyPatchLocal";
-import { mockGate } from "../../src/eval/mocks/mockGate";
-import { mockInvariants } from "../../src/eval/mocks/mockInvariants";
-import { createScriptedRunner } from "../../src/eval/runners/scriptedRunner";
-import type { EvaluationResult } from "../../src/types";
-import { allCases, allPatches, harnessV1, heldOutAttacks } from "../fixtures";
+import { evaluateCandidates, evaluateHarness } from "../../src/eval/index.ts";
+import type { ApplyPatchFn, DetailedEvaluationResult, EvalDeps } from "../../src/eval/index.ts";
+import { applyPatchLocal } from "../../src/eval/mocks/applyPatchLocal.ts";
+import { mockGate } from "../../src/eval/mocks/mockGate.ts";
+import { mockInvariants } from "../../src/eval/mocks/mockInvariants.ts";
+import { createScriptedRunner } from "../../src/eval/runners/scriptedRunner.ts";
+import type { EvaluationResult } from "../../src/types.ts";
+import { allCases, allPatches, harnessV1, heldOutAttacks } from "../fixtures/index.ts";
 
 const mockDeps: EvalDeps = {
   runCase: createScriptedRunner({ gate: mockGate, checkInvariants: mockInvariants }),

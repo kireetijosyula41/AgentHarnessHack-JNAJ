@@ -1,4 +1,4 @@
-import type { DetailedEvaluationResult } from "./types";
+import type { DetailedEvaluationResult } from "./types.ts";
 
 // Formulas from PLAN.md §22.
 export type HarnessMetrics = {

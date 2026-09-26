@@ -1,4 +1,4 @@
-import type { DetailedEvaluationResult } from "./types";
+import type { DetailedEvaluationResult } from "./types.ts";
 
 const LABEL_WIDTH = 19;
 const line = (label: string, value: string | number) => label.padEnd(LABEL_WIDTH) + value;

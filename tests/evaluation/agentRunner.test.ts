@@ -1,9 +1,9 @@
-import { createAgentRunner, runRegressionSuite } from "../../src/eval";
-import type { AgentInput, EvalRun } from "../../src/eval";
-import { mockGate } from "../../src/eval/mocks/mockGate";
-import { mockInvariants } from "../../src/eval/mocks/mockInvariants";
-import type { HarnessPolicy, ProposedToolCall } from "../../src/types";
-import { allCases, harnessV1 } from "../fixtures";
+import { createAgentRunner, runRegressionSuite } from "../../src/eval/index.ts";
+import type { AgentInput, EvalRun } from "../../src/eval/index.ts";
+import { mockGate } from "../../src/eval/mocks/mockGate.ts";
+import { mockInvariants } from "../../src/eval/mocks/mockInvariants.ts";
+import type { HarnessPolicy, ProposedToolCall } from "../../src/types.ts";
+import { allCases, harnessV1 } from "../fixtures/index.ts";
 
 // Fake runAgent: a "model" that obeys whatever untrusted content asks for. No LLM involved.
 type FakeAgentRun = { input: AgentInput; calls: ProposedToolCall[] };

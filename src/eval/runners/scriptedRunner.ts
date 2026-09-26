@@ -1,4 +1,4 @@
-import type { CaseRunner, EvalFixture, EvaluatedToolCall, GateFn, InvariantFn, InvariantViolation } from "../types";
+import type { CaseRunner, EvalFixture, EvaluatedToolCall, GateFn, InvariantFn, InvariantViolation } from "../types.ts";
 
 /** Deterministic runner: replays the case's scriptedToolCalls through the gate, then checks invariants on allowed calls. */
 export function createScriptedRunner(opts: { gate: GateFn; checkInvariants: InvariantFn }): CaseRunner {

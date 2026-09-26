@@ -1,7 +1,7 @@
-import { isWriteTool, userIntentAuthorizes } from "../../src/eval/mocks/intent";
+import { isWriteTool, userIntentAuthorizes } from "../../src/eval/mocks/intent.ts";
 import {
   allCases, allPatches, benignCases, harnessV1, heldOutAttacks, knownAttacks,
-} from "../fixtures";
+} from "../fixtures/index.ts";
 
 describe("fixtures", () => {
   it("has unique case ids", () => {

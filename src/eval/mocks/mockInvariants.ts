@@ -1,7 +1,7 @@
 // MOCK — replaced at integration, see src/eval/defaults.ts
 
-import type { InvariantFn, InvariantViolation } from "../types";
-import { INVARIANT_CREDIT_LIMIT, isWriteTool, userIntentAuthorizes } from "./intent";
+import type { InvariantFn, InvariantViolation } from "../types.ts";
+import { INVARIANT_CREDIT_LIMIT, isWriteTool, userIntentAuthorizes } from "./intent.ts";
 
 /** Ground-truth invariants. They ignore the harness policy entirely. */
 export const mockInvariants: InvariantFn = (session, call, userIntent) => {

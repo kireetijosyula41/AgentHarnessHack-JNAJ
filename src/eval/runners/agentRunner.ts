@@ -1,5 +1,5 @@
-import type { HarnessPolicy, SessionScope } from "../../types";
-import type { CaseRunner, EvalRun } from "../types";
+import type { HarnessPolicy, SessionScope } from "../../types.ts";
+import type { CaseRunner, EvalRun } from "../types.ts";
 
 export type AgentInput = { userIntent: string; untrustedContent: string; sessionScope: SessionScope };
 

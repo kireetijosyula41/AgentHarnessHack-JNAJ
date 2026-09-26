@@ -1,7 +1,7 @@
-import { judgeCase } from "../../src/eval/judge";
-import type { EvalRun } from "../../src/eval/types";
-import type { RegressionCase } from "../../src/types";
-import { SESSION_A } from "../fixtures";
+import { judgeCase } from "../../src/eval/judge.ts";
+import type { EvalRun } from "../../src/eval/types.ts";
+import type { RegressionCase } from "../../src/types.ts";
+import { SESSION_A } from "../fixtures/index.ts";
 
 const base = { userIntent: "x", untrustedContent: "", sessionScope: SESSION_A };
 const run = (partial: Partial<EvalRun>): EvalRun => ({

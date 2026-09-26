@@ -1,4 +1,4 @@
-import type { PatchCandidate } from "../../src/types";
+import type { PatchCandidate } from "../../src/types.ts";
 
 export const patchScopeMatch: PatchCandidate = {
   id: "patch_scope_match",

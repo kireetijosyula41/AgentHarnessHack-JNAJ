@@ -1,4 +1,4 @@
-import type { HarnessPolicy } from "../../src/types";
+import type { HarnessPolicy } from "../../src/types.ts";
 
 export const harnessV1: HarnessPolicy = {
   version: 1,

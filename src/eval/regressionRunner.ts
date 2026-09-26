@@ -1,6 +1,6 @@
-import type { HarnessPolicy, RegressionCase } from "../types";
-import { judgeCase } from "./judge";
-import type { CaseResult, CaseRunner } from "./types";
+import type { HarnessPolicy, RegressionCase } from "../types.ts";
+import { judgeCase } from "./judge.ts";
+import type { CaseResult, CaseRunner } from "./types.ts";
 
 /** Runs cases sequentially in input order (real LLM runs are rate-limited). Never throws. */
 export async function runRegressionSuite(

@@ -1,6 +1,6 @@
-import { compareMetrics, computeMetrics, evaluateCandidate, evaluateHarness } from "../../src/eval";
-import type { DetailedEvaluationResult } from "../../src/eval";
-import { allCases, harnessV1, patchScopeMatch } from "../fixtures";
+import { compareMetrics, computeMetrics, evaluateCandidate, evaluateHarness } from "../../src/eval/index.ts";
+import type { DetailedEvaluationResult } from "../../src/eval/index.ts";
+import { allCases, harnessV1, patchScopeMatch } from "../fixtures/index.ts";
 
 describe("metrics", () => {
   it("v1 baseline vs patch_scope_match", async () => {
