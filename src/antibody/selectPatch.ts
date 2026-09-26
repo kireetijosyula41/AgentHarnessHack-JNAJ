@@ -115,22 +115,35 @@ function validateEvaluation(
 ): void {
   const id = ev.patchId;
 
-  // Non-negative totals
-  if (ev.knownAttacksTotal < 0) {
-    throw new InconsistentEvaluationError(id, "knownAttacksTotal is negative");
-  }
-  if (ev.benignTotal < 0) {
-    throw new InconsistentEvaluationError(id, "benignTotal is negative");
-  }
+  // Every metric count must be a non-negative safe integer. This rejects
+  // NaN, Infinity, and fractional values BEFORE any range comparison, since
+  // NaN silently passes < and > checks (NaN < 0 === false, NaN > n === false).
+  const requireCount = (value: number, label: string): void => {
+    if (!Number.isSafeInteger(value)) {
+      throw new InconsistentEvaluationError(
+        id,
+        `${label} must be a non-negative integer, received ${value}`,
+      );
+    }
+    if (value < 0) {
+      throw new InconsistentEvaluationError(id, `${label} is negative`);
+    }
+  };
+
+  requireCount(ev.knownAttacksTotal, "knownAttacksTotal");
+  requireCount(ev.knownAttacksPassed, "knownAttacksPassed");
+  requireCount(ev.benignTotal, "benignTotal");
+  requireCount(ev.benignPassed, "benignPassed");
+  requireCount(ev.patchSize, "patchSize");
 
   // Passed counts within [0, total]
-  if (ev.knownAttacksPassed < 0 || ev.knownAttacksPassed > ev.knownAttacksTotal) {
+  if (ev.knownAttacksPassed > ev.knownAttacksTotal) {
     throw new InconsistentEvaluationError(
       id,
       `knownAttacksPassed (${ev.knownAttacksPassed}) out of range [0, ${ev.knownAttacksTotal}]`,
     );
   }
-  if (ev.benignPassed < 0 || ev.benignPassed > ev.benignTotal) {
+  if (ev.benignPassed > ev.benignTotal) {
     throw new InconsistentEvaluationError(
       id,
       `benignPassed (${ev.benignPassed}) out of range [0, ${ev.benignTotal}]`,
@@ -141,10 +154,9 @@ function validateEvaluation(
   if (ev.heldOutTotal !== undefined || ev.heldOutPassed !== undefined) {
     const total = ev.heldOutTotal ?? 0;
     const passed = ev.heldOutPassed ?? 0;
-    if (total < 0) {
-      throw new InconsistentEvaluationError(id, "heldOutTotal is negative");
-    }
-    if (passed < 0 || passed > total) {
+    requireCount(total, "heldOutTotal");
+    requireCount(passed, "heldOutPassed");
+    if (passed > total) {
       throw new InconsistentEvaluationError(
         id,
         `heldOutPassed (${passed}) out of range [0, ${total}]`,
@@ -183,14 +195,26 @@ function isSelectable(ev: EvaluationResult): boolean {
  * Count the number of distinct tool names affected by a candidate's changes.
  * Top-level paths (e.g. "untrustedContentCanAuthorizeTools") count as zero
  * tool rules changed.
+ *
+ * A tool-rule path must have exactly three non-empty segments
+ * (toolRules.<toolName>.<field>). Malformed shapes such as a missing or empty
+ * tool segment are ignored rather than being counted as a bogus "" tool — this
+ * keeps the tie-break metric honest even for externally supplied candidates.
  */
 function distinctToolRulesChanged(candidate: PatchCandidate): number {
   const tools = new Set<string>();
   for (const change of candidate.changes) {
     const parts = change.path.split(".");
-    // toolRules.<toolName>.<field> → parts[1] is the tool name
-    if (parts[0] === "toolRules" && parts[1] !== undefined) {
-      tools.add(parts[1]);
+    const [root, toolName, field] = parts;
+    if (
+      parts.length === 3 &&
+      root === "toolRules" &&
+      typeof toolName === "string" &&
+      toolName.length > 0 &&
+      typeof field === "string" &&
+      field.length > 0
+    ) {
+      tools.add(toolName);
     }
   }
   return tools.size;
