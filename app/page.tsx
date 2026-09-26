@@ -10,7 +10,14 @@ type Snapshot = {
   metrics: { attacksCaptured: number; regressions: number; evaluations: number; versions: number };
 };
 
-type RepairResult = { patch: PatchCandidate; evaluation: EvaluationResult; harness: HarnessVersion };
+type RepairResult = {
+  patch: PatchCandidate;
+  evaluation: EvaluationResult;
+  harness: HarnessVersion;
+  rationale?: string;
+  explanation?: string;
+  reasoned?: boolean;
+};
 
 const initialInput = {
   subjectId: "user_A",
@@ -255,6 +262,12 @@ export default function Home() {
               <span className="success-kicker">PATCH VERIFIED</span>
               <p>{repair.patch.reason}</p>
               <div className="diff"><span>- requireScopeMatch: false</span><strong>+ requireScopeMatch: true</strong></div>
+              {repair.explanation && (
+                <div className="reasoning">
+                  <span className="reasoning-kicker">{repair.reasoned ? "◆ AGENT ROOT-CAUSE ANALYSIS" : "◆ ROOT-CAUSE ANALYSIS"}</span>
+                  <p>{repair.explanation}</p>
+                </div>
+              )}
               <div className="patch-footer"><span>PATCH SIZE <b>{repair.evaluation.patchSize}</b></span><span>NEW VERSION <b>v{repair.harness.version}</b></span></div>
             </div>
           )}

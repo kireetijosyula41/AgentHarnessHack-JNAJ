@@ -93,6 +93,11 @@ footer { height: 80px; display:flex;align-items:center;justify-content:space-bet
 .hero-metrics span { color: var(--muted); font: 700 8px ui-monospace, monospace; letter-spacing: .1em; }
 .hero-metrics b { color: var(--ink); font: 500 12px ui-monospace, monospace; }
 
+/* Repair reasoning narrative */
+.reasoning { margin-top: 14px; padding: 13px; border: 1px solid rgba(114,240,164,.18); background: rgba(114,240,164,.04); }
+.reasoning-kicker { color: var(--green); font: 800 8px ui-monospace, monospace; letter-spacing: .12em; }
+.reasoning p { margin: 9px 0 0; color: #b4bdb6; font-size: 12px; line-height: 1.6; }
+
 /* Runtime trace stake chip */
 .stake-chip { display: flex; align-items: center; gap: 10px; margin-top: 16px; padding: 12px 13px; border: 1px solid rgba(114,240,164,.22); background: rgba(114,240,164,.05); color: var(--green); font: 700 9px/1.4 ui-monospace, monospace; letter-spacing: .05em; }
 

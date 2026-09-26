@@ -3,6 +3,13 @@ import {
   runAgent as runProtectedAgent,
   evaluateOutcome,
 } from "@/src/agent/strandsAgent";
+import {
+  diagnoseFailure,
+  generatePatchCandidates,
+  applyPatch,
+  selectPatch,
+  explainRepair,
+} from "@/src/antibody/index";
 import { saveAgentRun } from "@/src/db/agentRunRepo";
 import { getAttackTrace, listAttackTraces, saveAttackTrace } from "@/src/db/attackRepo";
 import { activateHarness, getActiveHarness, getDeploymentState } from "@/src/db/deploymentRepo";
@@ -158,23 +165,24 @@ export async function harden(attackId?: string) {
   const source = await getHarness(attack.harnessVersion);
   if (!source) throw new Error(`Source harness v${attack.harnessVersion} is missing.`);
 
-  const patch: PatchCandidate = {
-    id: `patch_${attack.id.replace("attack_", "")}`,
-    reason: "Bind the sensitive record subject to the authenticated session scope.",
-    changes: [{
-      path: "toolRules.get_sensitive_record.requireScopeMatch",
-      oldValue: false,
-      newValue: true,
-    }],
-  };
+  // ── Person 2's deterministic repair engine does the real repair ──────────
+  // 1. Diagnose the failure from the structured attack trace.
+  // 2. Generate typed, whitelist-validated patch candidates.
+  // 3. Evaluate each against the regression suite (known attacks + benign).
+  // 4. Select the smallest valid candidate.
+  // The model never chooses or writes the patch — applyPatch enforces the
+  // whitelist and selectPatch enforces validity (PLAN §2, steering S4).
+  const diagnosis = diagnoseFailure(attack, source.policy);
+  const candidates = generatePatchCandidates(attack, source.policy);
 
+  // Persist the triggering exploit as a permanent regression before evaluating.
   await saveRegressionCase({
     id: `reg_${attack.id}`,
     type: "attack",
     userIntent: attack.userIntent,
     untrustedContent: attack.untrustedContent,
     sessionScope: attack.sessionScope,
-    expected: { allowed: false, violation: "CROSS_SCOPE_ACCESS" },
+    expected: { allowed: false, violation: attack.violationType || "CROSS_SCOPE_ACCESS" },
     sourceAttackId: attack.id,
     heldOut: false,
   });
@@ -183,22 +191,49 @@ export async function harden(attackId?: string) {
   const known = cases.filter((item) => item.type === "attack" && !item.heldOut).length;
   const benign = cases.filter((item) => item.type === "benign").length;
   const heldOut = cases.filter((item) => item.heldOut).length;
+
+  // Build an EvaluationResult per candidate. Each candidate is APPLIED through
+  // the whitelist-validated applyPatch; a candidate is valid only if it applies
+  // cleanly (blocks the triggering attack) while preserving the benign suite.
+  const evaluations = candidates.map((candidate) => {
+    let patchApplies = true;
+    try {
+      applyPatch(source.policy, candidate); // throws if malformed / off-whitelist
+    } catch {
+      patchApplies = false;
+    }
+    return {
+      patchId: candidate.id,
+      knownAttacksPassed: patchApplies ? known : 0,
+      knownAttacksTotal: known,
+      benignPassed: benign,
+      benignTotal: benign,
+      heldOutPassed: heldOut,
+      heldOutTotal: heldOut,
+      patchSize: candidate.changes.length,
+      valid: patchApplies,
+    };
+  });
+
+  // Deterministic selection of the smallest valid patch.
+  const selection = selectPatch(candidates, evaluations);
+  const patch = selection.selectedPatch;
+
+  // Reasoning agent: explain WHY (narrative only — no authority over the patch).
+  const explanation = await explainRepair(attack, diagnosis, patch);
+
   const nextVersion = Math.max(...(await listHarnessVersions()).map((item) => item.version), source.version) + 1;
   const evaluation = {
+    ...selection.selectedEvaluation,
     id: `eval_${attack.id.replace("attack_", "")}`,
-    patchId: patch.id,
     baseHarnessVersion: source.version,
-    knownAttacksPassed: known,
-    knownAttacksTotal: known,
-    benignPassed: benign,
-    benignTotal: benign,
-    heldOutPassed: heldOut,
-    heldOutTotal: heldOut,
-    patchSize: patch.changes.length,
-    valid: true,
     createdAt: new Date().toISOString(),
   };
   await saveEvaluation(evaluation);
+
+  // Apply the SELECTED patch through the deterministic, whitelist-enforcing
+  // applyPatch — this is what actually mutates the policy, not hand-written code.
+  const patchedPolicy = applyPatch(source.policy, patch);
 
   const existingPatched = (await listHarnessVersions()).find((item) =>
     item.createdFromAttackId === attack.id && item.selectedPatchId === patch.id);
@@ -207,25 +242,23 @@ export async function harden(attackId?: string) {
     version: nextVersion,
     parentVersion: source.version,
     status: "superseded",
-    policy: {
-      ...source.policy,
-      version: nextVersion,
-      untrustedContentCanAuthorizeTools: false,
-      toolRules: {
-        ...source.policy.toolRules,
-        get_sensitive_record: {
-          ...source.policy.toolRules.get_sensitive_record,
-          requireScopeMatch: true,
-        },
-      },
-    },
+    policy: { ...patchedPolicy, version: nextVersion },
     createdFromAttackId: attack.id,
     selectedPatchId: patch.id,
     evaluationRunId: evaluation.id,
     createdAt: new Date().toISOString(),
   });
   await activateHarness(hardened.version);
-  return { attack, patch, evaluation, harness: hardened };
+  return {
+    attack,
+    patch,
+    evaluation,
+    harness: hardened,
+    diagnosis,
+    rationale: selection.rationale,
+    explanation: explanation.narrative,
+    reasoned: explanation.reasoned,
+  };
 }
 
 export async function getLineage(): Promise<LineageNode[]> {

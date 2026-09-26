@@ -47,6 +47,10 @@ export {
 export { generatePatchCandidates } from "./generatePatches.ts";
 export { AlreadyRepairedError } from "./generatePatches.ts";
 
+// Repair explanation (reasoning agent — proposes narrative only, no authority)
+export { explainRepair } from "./explainRepair.ts";
+export type { RepairExplanation } from "./explainRepair.ts";
+
 // Patch selection
 export { selectPatch } from "./selectPatch.ts";
 export type { SelectionResult } from "./selectPatch.ts";
