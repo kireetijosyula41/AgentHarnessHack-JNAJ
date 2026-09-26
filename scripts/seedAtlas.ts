@@ -30,7 +30,13 @@ async function seed() {
   console.log(`Seeded ${result.database}: harness v1, deployment state, and ${seedData.regressions.length} regressions.`);
 }
 
-seed().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+seed()
+  .then(() => {
+    // The cached Mongo client keeps its connection pool open, which would keep
+    // this one-shot CLI process alive indefinitely. Exit explicitly once done.
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  });

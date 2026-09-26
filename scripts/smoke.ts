@@ -24,7 +24,12 @@ async function smoke() {
   console.log(`Local smoke OK: v1 exploit → v${snapshot.harness.version} blocked; ${snapshot.lineage.length} immutable versions.`);
 }
 
-smoke().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+smoke()
+  .then(() => {
+    // Exit explicitly: in Atlas mode the cached Mongo client keeps its pool open.
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  });
