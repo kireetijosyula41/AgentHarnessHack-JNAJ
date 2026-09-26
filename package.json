@@ -25,6 +25,7 @@
     "agent": "tsx src/agent/strandsAgent.ts",
     "agent:live": "node --env-file=.env --import tsx src/agent/strandsAgent.ts",
     "seed": "tsx scripts/seedAtlas.ts",
+    "reset": "node --env-file=.env --import tsx scripts/resetDemo.ts",
     "smoke": "tsx scripts/smoke.ts"
   },
   "dependencies": {
