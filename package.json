@@ -1,0 +1,49 @@
+{
+  "name": "antibody",
+  "version": "0.1.0",
+  "description": "Antibody — a self-hardening security harness for tool-using AI agents.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit",
+    "dev": "next dev",
+    "build:next": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "test": "npm run test:runtime && npm run test:repair-engine",
+    "test:runtime": "vitest run",
+    "test:runtime:watch": "vitest",
+    "test:repair-engine": "node --import tsx/esm --test 'tests/patch/**/*.tests.ts' 'tests/repair/**/*.tests.ts' 'tests/selection/**/*.tests.ts'",
+    "test:patch": "node --import tsx/esm --test 'tests/patch/**/*.tests.ts'",
+    "test:repair": "node --import tsx/esm --test 'tests/repair/**/*.tests.ts'",
+    "test:selection": "node --import tsx/esm --test 'tests/selection/**/*.tests.ts'",
+    "test:security": "npm run test:runtime && npm run test:repair-engine",
+    "agent": "tsx src/agent/strandsAgent.ts",
+    "agent:live": "node --env-file=.env --import tsx src/agent/strandsAgent.ts",
+    "seed": "tsx scripts/seedAtlas.ts",
+    "smoke": "tsx scripts/smoke.ts"
+  },
+  "dependencies": {
+    "@strands-agents/sdk": "1.19.0",
+    "mongodb": "^6.10.0",
+    "next": "^15.1.0",
+    "openai": "^6.49.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^15.1.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.0"
+  }
+}
