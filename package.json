@@ -1,0 +1,28 @@
+{
+  "name": "antibody",
+  "version": "0.1.0",
+  "description": "Antibody — a self-hardening security harness for tool-using AI agents.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:security": "vitest run tests/",
+    "agent": "tsx src/agent/strandsAgent.ts",
+    "agent:live": "node --env-file=.env --import tsx src/agent/strandsAgent.ts"
+  },
+  "dependencies": {
+    "@strands-agents/sdk": "1.19.0",
+    "openai": "^6.49.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
