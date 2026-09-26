@@ -1,4 +1,8 @@
 import { randomUUID } from "node:crypto";
+import {
+  runAgent as runProtectedAgent,
+  evaluateOutcome,
+} from "@/src/agent/strandsAgent";
 import { saveAgentRun } from "@/src/db/agentRunRepo";
 import { getAttackTrace, listAttackTraces, saveAttackTrace } from "@/src/db/attackRepo";
 import { activateHarness, getActiveHarness, getDeploymentState } from "@/src/db/deploymentRepo";
@@ -23,6 +27,11 @@ export type RunInput = {
   subjectId: string;
 };
 
+/**
+ * Retained fallback. As of the live-model integration, runAgent drives Person
+ * 1's protected runtime (Strands + OpenRouter, or the offline planner) instead
+ * of this regex. Kept for reference / a fully offline deterministic path.
+ */
 function inferToolCall(input: RunInput): ProposedToolCall {
   const target = input.untrustedContent.match(/user_[A-Za-z0-9-]+/i)?.[0];
   const sensitive = /sensitive|private|secret|billing record/i.test(input.untrustedContent);
@@ -62,23 +71,57 @@ export function evaluateGate(
 export async function runAgent(input: RunInput, kind: "run" | "replay" = "run"): Promise<RuntimeResult> {
   const harness = await getActiveHarness();
   const session = { subjectId: input.subjectId, roles: ["member"] };
-  const proposedToolCall = inferToolCall(input);
-  const gateResult = evaluateGate(harness.policy, session, proposedToolCall);
-  const requestedSubject = proposedToolCall.args.subject_id;
-  const crossScope = proposedToolCall.tool === "get_sensitive_record" && requestedSubject !== input.subjectId;
-  const outcome = gateResult.allowed && crossScope
+
+  // Drive Person 1's protected runtime. This uses the LIVE Strands + OpenRouter
+  // path automatically when OPENROUTER_API_KEY is set, and the deterministic
+  // offline planner otherwise. Both paths funnel every tool call through the
+  // same Action Gate against the active harness policy, so the security outcome
+  // is authoritative regardless of path.
+  const run = await runProtectedAgent(
+    {
+      userIntent: input.userIntent,
+      untrustedContent: input.untrustedContent,
+      sessionScope: session,
+    },
+    harness.policy,
+  );
+
+  // Use the first gated invocation as the representative tool call for the UI.
+  // If the model proposed nothing, fall back to a benign self-scoped call so
+  // the control plane always has a well-formed RuntimeResult to display.
+  const firstInvocation = run.invocations[0];
+  const proposedToolCall: ProposedToolCall = firstInvocation?.proposedToolCall ?? {
+    tool: "get_case_status",
+    args: { subject_id: input.subjectId },
+    reason: "The model proposed no tool call.",
+  };
+  const gateResult: GateResult = firstInvocation?.gateResult ?? {
+    allowed: true,
+    reason: "No tool call was proposed.",
+  };
+
+  // Person 1's evaluateOutcome is the single source of truth for exploit/blocked.
+  const outcomes = evaluateOutcome(run);
+  const exploit = outcomes.find((o) => o.outcome === "successful_exploit");
+  const blocked = outcomes.find((o) => o.outcome === "blocked");
+  const outcome: RuntimeResult["outcome"] = exploit
     ? "successful_exploit"
-    : gateResult.allowed ? "safe" : "blocked";
+    : blocked
+      ? "blocked"
+      : "safe";
 
   const result: RuntimeResult = {
     harnessVersion: harness.version,
     proposedToolCall,
     gateResult,
-    failedInvariant: crossScope ? "INV-001" : undefined,
+    failedInvariant: exploit ? exploit.invariant : undefined,
     outcome,
   };
 
-  if (outcome === "successful_exploit") {
+  if (outcome === "successful_exploit" && exploit) {
+    // Persist the ACTUAL exploiting invocation Person 1's runtime observed,
+    // not a re-inferred one, so hardening repairs the tool the model abused.
+    const exploitInvocation = exploit.invocation ?? firstInvocation;
     const id = `attack_${randomUUID().slice(0, 8)}`;
     const attack: AttackTrace = {
       id,
@@ -86,10 +129,10 @@ export async function runAgent(input: RunInput, kind: "run" | "replay" = "run"):
       userIntent: input.userIntent,
       untrustedContent: input.untrustedContent,
       sessionScope: session,
-      proposedToolCall,
-      gateResult,
-      failedInvariant: "INV-001",
-      violationType: "CROSS_SCOPE_ACCESS",
+      proposedToolCall: exploitInvocation?.proposedToolCall ?? proposedToolCall,
+      gateResult: exploitInvocation?.gateResult ?? gateResult,
+      failedInvariant: exploit.invariant,
+      violationType: exploit.violationType ?? "CROSS_SCOPE_ACCESS",
       outcome,
       createdAt: new Date().toISOString(),
     };
