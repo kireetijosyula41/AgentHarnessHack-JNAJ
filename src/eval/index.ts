@@ -8,3 +8,5 @@ export type * from "./types";
 export { compareMetrics, computeMetrics } from "./metrics";
 export type { HarnessMetrics } from "./metrics";
 export { formatEvaluation } from "./report";
+export { createAgentRunner } from "./runners/agentRunner";
+export type { AgentInput } from "./runners/agentRunner";
