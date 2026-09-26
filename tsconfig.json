@@ -5,18 +5,19 @@
     "moduleResolution": "Bundler",
     "lib": ["ES2022"],
     "types": ["node"],
+    "rootDir": ".",
+    "outDir": "dist",
     "strict": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "declaration": true,
-    "outDir": "dist",
-    "rootDir": ".",
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitOverride": true
+    "allowImportingTsExtensions": true,
+    "noEmit": true
   },
-  "include": ["src", "tests", "scripts"],
+  "include": ["src/**/*", "tests/**/*", "scripts/**/*"],
   "exclude": ["node_modules", "dist"]
 }

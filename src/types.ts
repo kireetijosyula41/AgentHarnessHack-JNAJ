@@ -4,7 +4,8 @@
  * FROZEN in the first 20 minutes (see PLAN.md §7). After that, changes here
  * must be announced to all four owners. Person 1 owns the runtime-facing
  * additions at the bottom of this file (AgentRun, InvariantResult); the core
- * contracts above are shared verbatim with the plan.
+ * contracts above are shared verbatim with the plan and consumed by Person 2
+ * (repair engine) and Person 3 (evaluation engine).
  */
 
 /** A tool call the model wants to make. Proposed — not yet authorized. */

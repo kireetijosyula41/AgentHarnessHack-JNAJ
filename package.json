@@ -4,13 +4,19 @@
   "description": "Antibody — a self-hardening security harness for tool-using AI agents.",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
+    "typecheck": "tsc --noEmit",
     "build": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:security": "vitest run tests/",
+    "test": "npm run test:runtime && npm run test:repair-engine",
+    "test:runtime": "vitest run",
+    "test:runtime:watch": "vitest",
+    "test:repair-engine": "node --import tsx/esm --test 'tests/patch/**/*.tests.ts' 'tests/repair/**/*.tests.ts' 'tests/selection/**/*.tests.ts'",
+    "test:patch": "node --import tsx/esm --test 'tests/patch/**/*.tests.ts'",
+    "test:repair": "node --import tsx/esm --test 'tests/repair/**/*.tests.ts'",
+    "test:selection": "node --import tsx/esm --test 'tests/selection/**/*.tests.ts'",
+    "test:security": "npm run test:runtime && npm run test:repair-engine",
     "agent": "tsx src/agent/strandsAgent.ts",
     "agent:live": "node --env-file=.env --import tsx src/agent/strandsAgent.ts"
   },
@@ -20,9 +26,9 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
-    "tsx": "^4.19.0",
-    "typescript": "^5.6.0",
+    "@types/node": "^22.20.4",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
     "vitest": "^2.1.0"
   }
 }
