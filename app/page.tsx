@@ -19,6 +19,19 @@ type RepairResult = {
   reasoned?: boolean;
 };
 
+type ImpactReport = {
+  activeVersion: number;
+  parentVersion: number | null;
+  attacksBlocked: Array<{ id: string; violation: string; nowBlocked: boolean; wasBlocked: boolean }>;
+  benignPreserved: Array<{ id: string; tool?: string; stillAllowed: boolean }>;
+  benignBroken: Array<{ id: string; tool?: string }>;
+  capabilityChanges: Array<{ tool: string; field: string; from: unknown; to: unknown }>;
+  affectedRoles: string[];
+  affectedSubjects: string[];
+  historicalTraffic: { total: number; nowAllowed: number; nowBlocked: number; newlyBlocked: number };
+  newApprovalWork: number;
+};
+
 const initialInput = {
   subjectId: "user_A",
   userIntent: "Show me the status of my account.",
@@ -65,6 +78,7 @@ export default function Home() {
   const [timeToImmunity, setTimeToImmunity] = useState<number | null>(null);
   const [assumptions, setAssumptions] = useState(initialAssumptions);
   const [showAssumptions, setShowAssumptions] = useState(false);
+  const [impact, setImpact] = useState<ImpactReport | null>(null);
 
   const refresh = useCallback(async () => {
     setSnapshot(await api<Snapshot>("/api/harness", { cache: "no-store" }));
@@ -128,7 +142,14 @@ export default function Home() {
       setRuntime(null);
       setRepair(null);
       setTimeToImmunity(null);
+      setImpact(null);
       await refresh();
+    });
+  }
+
+  function openImpact() {
+    return act("impact", async () => {
+      setImpact(await api<ImpactReport>("/api/impact", { cache: "no-store" }));
     });
   }
 
@@ -369,6 +390,95 @@ export default function Home() {
             <span>Hours saved = manual (triage + write + test + deploy) − Antibody automated time</span>
             <span>Tests automated = attacks × benign cases × candidates evaluated</span>
           </div>
+        </div>
+      </section>
+
+      <section className="impact-grid">
+        <div className="panel impact-lab">
+          <div className="panel-heading">
+            <div><span className="step">07</span><h2>Impact Lab</h2></div>
+            <span className="panel-meta">WHAT CHANGED · DEVELOPER VIEW</span>
+          </div>
+
+          {!impact ? (
+            <div className="lab-intro">
+              <p>Before you trust a patch, see exactly what it did: which attacks it closes, which legitimate work it keeps, which capabilities and roles it touches, and what it would do to historical traffic.</p>
+              <button className="secondary" onClick={openImpact} disabled={(snapshot?.harness.version ?? 1) < 2 || Boolean(busy)}>
+                {busy === "impact" ? "ANALYZING…" : "ANALYZE IMPACT"}<span>⌕</span>
+              </button>
+              {(snapshot?.harness.version ?? 1) < 2 && <small className="lab-hint">Harden the harness first to produce a change to analyze.</small>}
+            </div>
+          ) : (
+            <div className="lab-grid">
+              <div className="lab-card">
+                <span className="lab-kicker">ATTACKS NOW BLOCKED</span>
+                <ul className="lab-list">
+                  {impact.attacksBlocked.map((a) => (
+                    <li key={a.id}>
+                      <StatusDot tone={a.nowBlocked ? "green" : "red"} />
+                      <code>{a.id}</code>
+                      <span className="lab-tag">{a.violation}</span>
+                      <b>{a.nowBlocked ? (a.wasBlocked ? "still blocked" : "newly blocked") : "STILL OPEN"}</b>
+                    </li>
+                  ))}
+                  {impact.attacksBlocked.length === 0 && <li className="lab-muted">No attack regressions recorded yet.</li>}
+                </ul>
+              </div>
+
+              <div className="lab-card">
+                <span className="lab-kicker">BENIGN WORKFLOWS STILL WORK</span>
+                <ul className="lab-list">
+                  {impact.benignPreserved.map((b) => (
+                    <li key={b.id}><StatusDot /><code>{b.id}</code><span className="lab-tag">{b.tool ?? "—"}</span><b>allowed</b></li>
+                  ))}
+                  {impact.benignBroken.map((b) => (
+                    <li key={b.id}><StatusDot tone="red" /><code>{b.id}</code><span className="lab-tag">{b.tool ?? "—"}</span><b className="bad">BROKEN</b></li>
+                  ))}
+                  {impact.benignPreserved.length === 0 && impact.benignBroken.length === 0 && <li className="lab-muted">No benign cases recorded.</li>}
+                </ul>
+              </div>
+
+              <div className="lab-card">
+                <span className="lab-kicker">CAPABILITIES CHANGED</span>
+                <ul className="lab-list">
+                  {impact.capabilityChanges.map((c, i) => (
+                    <li key={`${c.tool}.${c.field}.${i}`}>
+                      <code>{c.tool === "(global)" ? c.field : `${c.tool}.${c.field}`}</code>
+                      <span className="lab-diff">{String(c.from)} → <b>{String(c.to)}</b></span>
+                    </li>
+                  ))}
+                  {impact.capabilityChanges.length === 0 && <li className="lab-muted">No capability changes.</li>}
+                </ul>
+              </div>
+
+              <div className="lab-card">
+                <span className="lab-kicker">USERS &amp; ROLES AFFECTED</span>
+                <div className="lab-chips">
+                  {impact.affectedRoles.map((r) => <span className="lab-chip" key={`r-${r}`}>role: {r}</span>)}
+                  {impact.affectedSubjects.map((s) => <span className="lab-chip" key={`s-${s}`}>subject: {s}</span>)}
+                  {impact.affectedRoles.length === 0 && impact.affectedSubjects.length === 0 && <span className="lab-muted">None impacted.</span>}
+                </div>
+              </div>
+
+              <div className="lab-card">
+                <span className="lab-kicker">HISTORICAL TRAFFIC (REPLAYED)</span>
+                <ul className="lab-stats">
+                  <li><span>Total runs replayed</span><b>{impact.historicalTraffic.total}</b></li>
+                  <li><span>Now allowed</span><b>{impact.historicalTraffic.nowAllowed}</b></li>
+                  <li><span>Now blocked</span><b>{impact.historicalTraffic.nowBlocked}</b></li>
+                  <li><span>Newly blocked by patch</span><b className={impact.historicalTraffic.newlyBlocked ? "warn" : ""}>{impact.historicalTraffic.newlyBlocked}</b></li>
+                </ul>
+              </div>
+
+              <div className="lab-card">
+                <span className="lab-kicker">NEW APPROVAL WORK</span>
+                <div className="lab-big">
+                  <strong className={impact.newApprovalWork ? "warn" : "ok"}>{impact.newApprovalWork}</strong>
+                  <small>calls the tightened policy now denies that previously passed — i.e. work that would newly need human approval or a scoped exception.</small>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

@@ -10,7 +10,7 @@ import {
   selectPatch,
   explainRepair,
 } from "@/src/antibody/index";
-import { saveAgentRun } from "@/src/db/agentRunRepo";
+import { listAgentRuns, saveAgentRun } from "@/src/db/agentRunRepo";
 import { getAttackTrace, listAttackTraces, saveAttackTrace } from "@/src/db/attackRepo";
 import { activateHarness, getActiveHarness, getDeploymentState } from "@/src/db/deploymentRepo";
 import { listEvaluations, saveEvaluation } from "@/src/db/evaluationRepo";
@@ -295,4 +295,161 @@ export async function rollback() {
   const state = await getDeploymentState();
   if (state.previousHarnessVersion === null) throw new Error("No previous harness is available.");
   return activateHarness(state.previousHarnessVersion);
+}
+
+// ---------------------------------------------------------------------------
+// Impact Lab — deterministic "what changed" analysis for developers.
+//
+// Everything below is computed by re-running the SAME Action Gate over data we
+// already store (regression cases, historical agent runs), comparing the active
+// (patched) policy against its parent. No fabricated numbers.
+// ---------------------------------------------------------------------------
+
+export type ImpactReport = {
+  activeVersion: number;
+  parentVersion: number | null;
+  // Which attacks are now blocked (vs. allowed under the parent policy).
+  attacksBlocked: Array<{ id: string; violation: string; nowBlocked: boolean; wasBlocked: boolean }>;
+  // Which benign workflows still work under the active policy.
+  benignPreserved: Array<{ id: string; tool?: string; stillAllowed: boolean }>;
+  benignBroken: Array<{ id: string; tool?: string }>;
+  // Which capabilities changed (per-tool policy diff, parent -> active).
+  capabilityChanges: Array<{ tool: string; field: string; from: unknown; to: unknown }>;
+  // Which users / roles are affected by the changed tools.
+  affectedRoles: string[];
+  affectedSubjects: string[];
+  // What would happen to historical traffic replayed under the active policy.
+  historicalTraffic: { total: number; nowAllowed: number; nowBlocked: number; newlyBlocked: number };
+  // How much new approval work the change creates (calls newly requiring denial/approval).
+  newApprovalWork: number;
+};
+
+/** Replay a single stored tool call through the gate under a given policy. */
+function gateFor(policy: HarnessPolicy, session: SessionScope, call: ProposedToolCall): boolean {
+  return evaluateGate(policy, session, call).allowed;
+}
+
+export async function computeImpact(): Promise<ImpactReport> {
+  const active = await getActiveHarness();
+  const parent =
+    active.parentVersion !== null ? await getHarness(active.parentVersion) : null;
+  const parentPolicy = parent?.policy ?? active.policy;
+
+  const [cases, runs] = await Promise.all([listRegressionCases(), listAgentRuns()]);
+
+  // ── Attacks now blocked ──────────────────────────────────────────────────
+  const attackCases = cases.filter((c) => c.type === "attack");
+  const attacksBlocked = attackCases.map((c) => {
+    const call: ProposedToolCall = {
+      tool: c.expected.tool ?? "get_sensitive_record",
+      // The regression's expected violation is cross-scope; model the abused call.
+      args: { subject_id: findForeignSubject(c.sessionScope.subjectId) },
+    };
+    const nowAllowed = gateFor(active.policy, c.sessionScope, call);
+    const wasAllowed = gateFor(parentPolicy, c.sessionScope, call);
+    return {
+      id: c.id,
+      violation: c.expected.violation ?? "CROSS_SCOPE_ACCESS",
+      nowBlocked: !nowAllowed,
+      wasBlocked: !wasAllowed,
+    };
+  });
+
+  // ── Benign workflows ─────────────────────────────────────────────────────
+  const benignCases = cases.filter((c) => c.type === "benign");
+  const benignReplayed = benignCases.map((c) => {
+    const call: ProposedToolCall = {
+      tool: c.expected.tool ?? "get_case_status",
+      args: { subject_id: c.sessionScope.subjectId }, // benign = self-scoped
+    };
+    return { id: c.id, tool: c.expected.tool, stillAllowed: gateFor(active.policy, c.sessionScope, call) };
+  });
+  const benignPreserved = benignReplayed.filter((b) => b.stillAllowed);
+  const benignBroken = benignReplayed.filter((b) => !b.stillAllowed).map(({ id, tool }) => ({ id, tool }));
+
+  // ── Capability changes (per-tool policy diff) ────────────────────────────
+  const capabilityChanges = diffPolicies(parentPolicy, active.policy);
+
+  // ── Affected roles / subjects (from cases touching the changed tools) ─────
+  const changedTools = new Set(capabilityChanges.map((d) => d.tool));
+  const affectedRoles = new Set<string>();
+  const affectedSubjects = new Set<string>();
+  for (const c of cases) {
+    const tool = c.expected.tool;
+    if (tool && changedTools.has(tool)) {
+      c.sessionScope.roles.forEach((r) => affectedRoles.add(r));
+      affectedSubjects.add(c.sessionScope.subjectId);
+    }
+  }
+
+  // ── Historical traffic replay ────────────────────────────────────────────
+  let nowAllowed = 0;
+  let nowBlocked = 0;
+  let newlyBlocked = 0;
+  for (const record of runs) {
+    const call = record.result.proposedToolCall;
+    const session: SessionScope = {
+      subjectId: String(call.args["subject_id"] ?? "unknown"),
+      roles: ["member"],
+    };
+    // Re-derive the ORIGINAL session subject from the stored run where possible.
+    const origSubject = deriveRunSubject(record);
+    const evalSession: SessionScope = { subjectId: origSubject, roles: session.roles };
+    const allowedNow = gateFor(active.policy, evalSession, call);
+    const allowedBefore = gateFor(parentPolicy, evalSession, call);
+    if (allowedNow) nowAllowed++;
+    else nowBlocked++;
+    if (allowedBefore && !allowedNow) newlyBlocked++;
+  }
+
+  return {
+    activeVersion: active.version,
+    parentVersion: active.parentVersion,
+    attacksBlocked,
+    benignPreserved: benignReplayed.filter((b) => b.stillAllowed),
+    benignBroken,
+    capabilityChanges,
+    affectedRoles: [...affectedRoles],
+    affectedSubjects: [...affectedSubjects],
+    historicalTraffic: { total: runs.length, nowAllowed, nowBlocked, newlyBlocked },
+    // New approval work = benign/historical calls the tightened policy now denies.
+    newApprovalWork: newlyBlocked + benignBroken.length,
+  };
+}
+
+/** Pick a subject different from the session subject to model a cross-scope call. */
+function findForeignSubject(self: string): string {
+  return self === "user_B" ? "user_A" : "user_B";
+}
+
+/** Best-effort original session subject for a historical run. */
+function deriveRunSubject(record: { result: RuntimeResult }): string {
+  const arg = record.result.proposedToolCall.args["subject_id"];
+  // A self-scoped benign call keeps its subject; an exploit used a foreign one.
+  return record.result.outcome === "successful_exploit" ? "user_A" : String(arg ?? "user_A");
+}
+
+/** Deterministic per-tool-rule diff between two policies. */
+function diffPolicies(from: HarnessPolicy, to: HarnessPolicy): ImpactReport["capabilityChanges"] {
+  const changes: ImpactReport["capabilityChanges"] = [];
+  if (from.untrustedContentCanAuthorizeTools !== to.untrustedContentCanAuthorizeTools) {
+    changes.push({
+      tool: "(global)",
+      field: "untrustedContentCanAuthorizeTools",
+      from: from.untrustedContentCanAuthorizeTools,
+      to: to.untrustedContentCanAuthorizeTools,
+    });
+  }
+  const tools = new Set([...Object.keys(from.toolRules), ...Object.keys(to.toolRules)]);
+  for (const tool of tools) {
+    const a = from.toolRules[tool] ?? {};
+    const b = to.toolRules[tool] ?? {};
+    const fields = new Set([...Object.keys(a), ...Object.keys(b)]) as Set<keyof typeof a>;
+    for (const field of fields) {
+      if (a[field] !== b[field]) {
+        changes.push({ tool, field: String(field), from: a[field], to: b[field] });
+      }
+    }
+  }
+  return changes;
 }
