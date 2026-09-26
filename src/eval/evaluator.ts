@@ -71,3 +71,33 @@ export async function evaluateCandidates(
   }
   return results;
 }
+
+export type BaselineReport = DetailedEvaluationResult & {
+  /** Known attacks that already get through on the base harness, other than the ones being repaired. */
+  preExistingHoles: string[];
+  /** Benign workflows the base harness already breaks. */
+  brokenBenign: string[];
+  /** Attacks whose outcome is not_attempted, which prove nothing either way. */
+  inconclusive: string[];
+};
+
+/**
+ * Preflight before evaluating candidates. If `preExistingHoles` or `brokenBenign` is
+ * non-empty, no single patch for the new exploit can be `valid`: fix the suite or harness first.
+ * `repairing` defaults to every case with a sourceAttackId (fresh regressions from attackToRegression).
+ */
+export async function evaluateBaseline(
+  baseHarness: HarnessPolicy, cases: readonly RegressionCase[],
+  deps: EvalDeps = defaultEvalDeps,
+  repairing: readonly string[] = cases.filter((c) => c.sourceAttackId !== undefined).map((c) => c.id),
+): Promise<BaselineReport> {
+  const result = await evaluateHarness(baseHarness, cases, deps);
+  const failed = (pred: (r: CaseResult) => boolean) => result.caseResults.filter(pred).map((r) => r.caseId);
+  return {
+    ...result,
+    preExistingHoles: failed((r) => r.type === "attack" && !r.heldOut && r.attackOutcome === "exploited"
+      && !repairing.includes(r.caseId)),
+    brokenBenign: failed((r) => r.type === "benign" && !r.passed),
+    inconclusive: failed((r) => r.attackOutcome === "not_attempted"),
+  };
+}

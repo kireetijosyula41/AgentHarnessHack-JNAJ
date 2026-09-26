@@ -10,6 +10,8 @@ export function formatEvaluation(r: DetailedEvaluationResult): string[] {
     line("Benign workflows", `${r.benignPassed}/${r.benignTotal}`),
   ];
   if (r.heldOutTotal !== undefined) lines.push(line("Held-out attacks", `${r.heldOutPassed ?? 0}/${r.heldOutTotal}`));
+  const inconclusive = r.caseResults.filter((c) => c.attackOutcome === "not_attempted").length;
+  if (inconclusive > 0) lines.push(line("Inconclusive", `${inconclusive} attack(s) not attempted`));
   lines.push(line("Patch size", r.patchSize), line("Valid", r.valid ? "yes" : "no"));
   if (r.error) lines.push(line("Error", r.error));
   return lines;

@@ -2,14 +2,14 @@ import { vi } from "vitest";
 import { evaluateCandidates, evaluateHarness } from "../../src/eval/index.ts";
 import type { ApplyPatchFn, DetailedEvaluationResult, EvalDeps } from "../../src/eval/index.ts";
 import { applyPatchLocal } from "../../src/eval/mocks/applyPatchLocal.ts";
-import { mockGate } from "../../src/eval/mocks/mockGate.ts";
-import { mockInvariants } from "../../src/eval/mocks/mockInvariants.ts";
+import { realGate } from "../../src/eval/runners/realGate.ts";
+import { oracle } from "../../src/eval/oracle.ts";
 import { createScriptedRunner } from "../../src/eval/runners/scriptedRunner.ts";
 import type { EvaluationResult } from "../../src/types.ts";
 import { allCases, allPatches, harnessV1, heldOutAttacks } from "../fixtures/index.ts";
 
 const mockDeps: EvalDeps = {
-  runCase: createScriptedRunner({ gate: mockGate, checkInvariants: mockInvariants }),
+  runCase: createScriptedRunner({ gate: realGate, checkInvariants: oracle }),
   applyPatch: applyPatchLocal,
 };
 
@@ -22,7 +22,7 @@ const row = (r: DetailedEvaluationResult): Row => [
   r.valid,
 ];
 
-describe("evaluator oracle table (harness v1, mock deps)", () => {
+describe("evaluator oracle table (harness v1, real gate)", () => {
   const snapshot = structuredClone(harnessV1);
   let baseline: DetailedEvaluationResult;
   let results: DetailedEvaluationResult[];
@@ -50,10 +50,10 @@ describe("evaluator oracle table (harness v1, mock deps)", () => {
     expect(row(byId.get(id)!)).toEqual(expected);
   });
 
-  it("patch_overbroad_roles breaks benign_sensitive_own with ROLE_NOT_ALLOWED", () => {
+  it("patch_overbroad_roles breaks benign_sensitive_own with ROLE_NOT_PERMITTED", () => {
     const failed = byId.get("patch_overbroad_roles")!.caseResults.filter((c) => c.type === "benign" && !c.passed);
     expect(failed).toHaveLength(1);
-    expect(failed[0]).toMatchObject({ caseId: "benign_sensitive_own", actualViolation: "ROLE_NOT_ALLOWED" });
+    expect(failed[0]).toMatchObject({ caseId: "benign_sensitive_own", actualViolation: "ROLE_NOT_PERMITTED" });
   });
 
   it("patch_malformed reports an error, runs no cases and does not pollute prototypes", () => {

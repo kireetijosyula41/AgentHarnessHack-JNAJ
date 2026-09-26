@@ -1,4 +1,4 @@
-import { isWriteTool, userIntentAuthorizes } from "../../src/eval/mocks/intent.ts";
+import { isWriteTool, userIntentAuthorizes } from "../../src/eval/oracle.ts";
 import {
   allCases, allPatches, benignCases, harnessV1, heldOutAttacks, knownAttacks,
 } from "../fixtures/index.ts";

@@ -1,12 +1,12 @@
-import { mockGate } from "../../src/eval/mocks/mockGate.ts";
-import { mockInvariants } from "../../src/eval/mocks/mockInvariants.ts";
+import { realGate } from "../../src/eval/runners/realGate.ts";
+import { oracle } from "../../src/eval/oracle.ts";
 import { runRegressionSuite } from "../../src/eval/regressionRunner.ts";
 import { createScriptedRunner } from "../../src/eval/runners/scriptedRunner.ts";
 import type { CaseResult } from "../../src/eval/types.ts";
 import type { RegressionCase } from "../../src/types.ts";
 import { SESSION_A, allCases, benignCases, harnessV1 } from "../fixtures/index.ts";
 
-const runCase = createScriptedRunner({ gate: mockGate, checkInvariants: mockInvariants });
+const runCase = createScriptedRunner({ gate: realGate, checkInvariants: oracle });
 
 describe("runRegressionSuite on harness v1 (oracle)", () => {
   let byId: Map<string, CaseResult>;

@@ -1,7 +1,8 @@
 import { createAgentRunner, runRegressionSuite } from "../../src/eval/index.ts";
-import type { AgentInput, EvalRun } from "../../src/eval/index.ts";
-import { mockGate } from "../../src/eval/mocks/mockGate.ts";
-import { mockInvariants } from "../../src/eval/mocks/mockInvariants.ts";
+import type { EvalRun } from "../../src/eval/index.ts";
+import type { AgentInput } from "../../src/types.ts";
+import { realGate } from "../../src/eval/runners/realGate.ts";
+import { oracle } from "../../src/eval/oracle.ts";
 import type { HarnessPolicy, ProposedToolCall } from "../../src/types.ts";
 import { allCases, harnessV1 } from "../fixtures/index.ts";
 
@@ -17,14 +18,14 @@ const fakeRunAgent = async (input: AgentInput, _harness: HarnessPolicy): Promise
 
 const toEvalRun = (run: FakeAgentRun, harness: HarnessPolicy): EvalRun => {
   const toolCalls = run.calls.map((call) => ({
-    call, gate: mockGate(harness, run.input.sessionScope, call, run.input.userIntent),
+    call, gate: realGate(harness, run.input.sessionScope, call, run.input.userIntent),
   }));
   return {
     harnessVersion: harness.version,
     toolCalls,
     invariantViolations: toolCalls
       .filter((tc) => tc.gate.allowed)
-      .flatMap((tc) => mockInvariants(run.input.sessionScope, tc.call, run.input.userIntent)),
+      .flatMap((tc) => oracle(run.input.sessionScope, tc.call, run.input.userIntent)),
   };
 };
 

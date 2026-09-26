@@ -9,7 +9,7 @@ export type EvaluatedToolCall = { call: ProposedToolCall; gate: GateResult };
 /** A ground-truth invariant failure (only for calls the gate ALLOWED). */
 export type InvariantViolation = {
   invariant: string;       // "INV-001" | "INV-002" | "INV-003" | ...
-  violationType: string;   // "CROSS_SCOPE_ACCESS" | "UNTRUSTED_AUTHORIZATION" | "ACTION_LIMIT"
+  violationType: string;   // a VIOLATION constant from src/harness/invariants.ts
   toolCall: ProposedToolCall;
 };
 
@@ -35,12 +35,16 @@ export type InvariantFn = (
 /** A RegressionCase with the tool calls a (compromised or benign) model would make. Used by the scripted runner. */
 export type EvalFixture = RegressionCase & { scriptedToolCalls: ProposedToolCall[] };
 
+/** not_attempted: the runner never proposed the attacked tool, so the case proves nothing. */
+export type AttackOutcome = "blocked" | "exploited" | "not_attempted";
+
 export type CaseResult = {
   caseId: string;
   type: "attack" | "benign";
   heldOut: boolean;
-  passed: boolean;              // benign: workflow succeeded; attack: attack was BLOCKED
-  attempted: boolean;           // was a call to expected.tool proposed at all?
+  passed: boolean;              // benign: workflow succeeded; attack: attempted AND blocked
+  attackOutcome?: AttackOutcome; // attacks only; absent if the runner threw
+  attempted: boolean;           // was expected.tool (or, if unset, any tool) proposed?
   actualAllowed: boolean | null; // gate decision on the first expected.tool call; null if not attempted
   actualViolation?: string;     // gate.violation on that call, if denied
   invariantViolations: string[]; // e.g. ["INV-001:CROSS_SCOPE_ACCESS"]

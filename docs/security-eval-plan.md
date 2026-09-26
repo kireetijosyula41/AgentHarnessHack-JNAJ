@@ -517,21 +517,24 @@ export function createAgentRunner<AgentRun>(opts: {
 - Once Person 1's `AgentRun` / `evaluateOutcome` exist, write `toEvalRun`. Map each proposed call and its gate result to `EvaluatedToolCall`, and map `evaluateOutcome(run)` failures to `InvariantViolation`. If `runAgent`'s input shape differs from the one above, adapt it inside `createAgentRunner`. **Don't** ask Person 1 to change theirs.
 - This runner calls an LLM. **Never** use it in `test:security`.
 
-## Task 11 — Integration swap (BLOCKED until Persons 1 & 2 merge)
+## Task 11 — Integration swap (Person 1 done; Person 2 pending)
 
-1. `git merge origin/main`.
-2. In `src/eval/defaults.ts`:
-   - Replace `mockGate` with Person 1's action gate. Write a thin adapter if its signature differs from `GateFn`.
-   - Replace `mockInvariants` with Person 1's invariant checker, adapted to `InvariantFn`.
-   - Replace `applyPatchLocal` with Person 2's `applyPatch`.
-   - Keep the mocks for the existing mock-based tests.
-3. Add `tests/evaluation/integration.test.ts`: the same oracle table as Task 8, but using the **real** gate/invariants/applyPatch with the scripted runner. If rows differ, compare Person 1's `harness_v1` with `tests/fixtures/harnessV1.ts`. Align the fixture to Person 1's v1, then raise any remaining semantic mismatch with Person 1. Don't silently rewrite the oracle.
-4. Hand Person 2 `evaluateCandidates` + `assertNoHeldOut`, and hand Person 4 the fixtures (`tests/fixtures/index.ts`) for `scripts/seedAtlas.ts`, plus `formatEvaluation` for the UI and smoke script.
+Done against `feat/strands-runtime` (merged into this branch):
+
+- `defaults.ts` runs `createHybridRunner`: cases with `scriptedToolCalls` replay through Person 1's `evaluateGate` (`runners/realGate.ts`). Anything else, like regressions from `attackToRegression`, goes through Person 1's `runAgent(..., { forceOffline: true })` (`createOfflineAgentRunner`).
+- `mockGate` was deleted. `mockInvariants` + `intent.ts` became `oracle.ts`, and we **kept it as the judge** instead of swapping in Person 1's checks. `checkInvariants(policy, …)` only fires when the policy enables a check, so under v1 it never sees the exploit. `evaluateOutcome` only detects INV-001 on `get_sensitive_record`. The oracle now uses Person 1's `INV` / `VIOLATION` constants.
+- The judge returns `attackOutcome: "blocked" | "exploited" | "not_attempted"`. `not_attempted` fails the case: an attack the runner never tried proves nothing.
+- `evaluateBaseline` is a preflight that reports `preExistingHoles`, `brokenBenign` and `inconclusive` on the base harness before candidates are scored.
+- `withReplay(regCase, trace)` pins a regression to its trace's exact tool call. It handles open decision 1 without changing the shared type.
+- `tests/fixtures/harnessV1.ts` was **not** aligned to Person 1's `HARNESS_V1`. Person 1's v1 leaves every write tool open, so `atk_untrusted_credit` and `atk_cross_scope_write` already succeed and no single patch can be valid. `integration.test.ts` pins this: `evaluateBaseline(HARNESS_V1, …)` flags both. **Needs a team decision:** either harden `HARNESS_V1` except for the one INV-001 hole, or keep write attacks out of the demo's known suite.
+- The benign write intents were reworded ("update case", "issue credit", "send message") because Person 1's INV-002 check only authorizes a write when the intent names the tool. Raise this with Person 1: their check is stricter than natural phrasing.
+
+Still to do: replace `applyPatchLocal` with Person 2's `applyPatch` once `repairengine` drops its committed `node_modules/` and is merged.
 
 ---
 
 ## Open decisions to raise with the team (don't resolve them unilaterally)
 
-1. **Replaying exploit regressions deterministically.** Shared `RegressionCase` has no recorded tool call, so a regression created by `attackToRegression` can only be re-run through the LLM, which is slow and nondeterministic. Proposal: add an optional `recordedToolCall?: ProposedToolCall` to `RegressionCase` in `src/types.ts`. The scripted runner would then use `scriptedToolCalls ?? [recordedToolCall]`. This is a shared-type change, so everyone has to agree first.
+1. **Replaying exploit regressions deterministically.** *(Worked around by `withReplay` + the offline fallback; the shared-type change is still an option.)* Shared `RegressionCase` has no recorded tool call, so a regression created by `attackToRegression` can only be re-run through the LLM, which is slow and nondeterministic. Proposal: add an optional `recordedToolCall?: ProposedToolCall` to `RegressionCase` in `src/types.ts`. The scripted runner would then use `scriptedToolCalls ?? [recordedToolCall]`. This is a shared-type change, so everyone has to agree first.
 2. **Benign validity rule.** This plan requires *all* benign cases to pass. With a real LLM runner, a flaky benign case could reject every patch. The alternative is "every benign case that passed on the base harness still passes." Revisit only if flakiness actually shows up.
 3. **Who owns `package.json` / `tsconfig.json`.** Person 4's Next.js app needs its own tsconfig settings. Whoever merges first wins, and everyone else merges into that.
