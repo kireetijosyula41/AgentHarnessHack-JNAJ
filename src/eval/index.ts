@@ -5,3 +5,6 @@ export { assertNoHeldOut, casesForPatchGeneration, splitCases } from "./caseSpli
 export { createScriptedRunner } from "./runners/scriptedRunner";
 export { defaultEvalDeps } from "./defaults";
 export type * from "./types";
+export { compareMetrics, computeMetrics } from "./metrics";
+export type { HarnessMetrics } from "./metrics";
+export { formatEvaluation } from "./report";
