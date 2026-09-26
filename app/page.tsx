@@ -334,69 +334,9 @@ export default function Home() {
       </section>
 
       <section className="impact-grid">
-        <div className="panel impact">
-          <div className="panel-heading">
-            <div><span className="step">06</span><h2>Business impact</h2></div>
-            <span className="panel-meta">MEASURED vs ESTIMATED</span>
-          </div>
-
-          <div className="impact-cols">
-            <div className="impact-col measured">
-              <span className="col-kicker measured-kicker">MEASURED (THIS RUN)</span>
-              <ul>
-                <li><span>Time to immunity</span><b>{immunityLabel}</b></li>
-                <li><span>Agents patched</span><b>{repair ? agentsPatched : "—"}</b></li>
-                <li><span>Tests run automatically</span><b>{testsAutomated || "—"}</b></li>
-                <li><span>Attack families closed</span><b>{repair ? `${attackFamiliesClosed} (${heldOutClosed} held-out)` : "—"}</b></li>
-                <li><span>Legit requests broken</span><b>{repair ? legitBroken : "—"}</b></li>
-              </ul>
-            </div>
-
-            <div className="impact-col estimated">
-              <div className="col-kicker-row">
-                <span className="col-kicker estimated-kicker">ESTIMATED</span>
-                <button className="assume-toggle" onClick={() => setShowAssumptions((v) => !v)}>
-                  edit assumptions {showAssumptions ? "▴" : "▾"}
-                </button>
-              </div>
-              <ul>
-                <li><span>Loss prevented</span><b>{repair ? `$${lossPrevented.toLocaleString()}` : "$—"}</b></li>
-                <li><span>Engineer hours saved</span><b>{repair ? `${hoursSaved.toFixed(1)} hrs` : "— hrs"}</b></li>
-                <li><span>Engineer $ saved</span><b>{repair ? `$${Math.round(engineerDollarsSaved).toLocaleString()}` : "$—"}</b></li>
-                <li><span>Customers not wrongly blocked</span><b>{repair ? falsePositivesAvoided : "—"}</b></li>
-              </ul>
-
-              {showAssumptions && (
-                <div className="assume-drawer">
-                  <label>VALUE AT RISK / RECORD ($)
-                    <input type="number" value={assumptions.valueAtRiskPerRecord}
-                      onChange={(e) => setAssumptions({ ...assumptions, valueAtRiskPerRecord: Number(e.target.value) || 0 })} />
-                  </label>
-                  <label>ENGINEER HOURLY RATE ($)
-                    <input type="number" value={assumptions.engineerHourlyRate}
-                      onChange={(e) => setAssumptions({ ...assumptions, engineerHourlyRate: Number(e.target.value) || 0 })} />
-                  </label>
-                  <label>MANUAL PATCH TIME (HRS) <span className="assume-note">team estimate</span>
-                    <input type="number" value={assumptions.manualPatchHours}
-                      onChange={(e) => setAssumptions({ ...assumptions, manualPatchHours: Number(e.target.value) || 0 })} />
-                  </label>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="formulas">
-            <span>Loss prevented = blocked actions × value at risk each</span>
-            <span>Hours saved = manual (triage + write + test + deploy) − Antibody automated time</span>
-            <span>Tests automated = attacks × benign cases × candidates evaluated</span>
-          </div>
-        </div>
-      </section>
-
-      <section className="impact-grid">
         <div className="panel impact-lab">
           <div className="panel-heading">
-            <div><span className="step">07</span><h2>Impact Lab</h2></div>
+            <div><span className="step">06</span><h2>Impact Lab</h2></div>
             <span className="panel-meta">WHAT CHANGED · DEVELOPER VIEW</span>
           </div>
 
@@ -479,6 +419,66 @@ export default function Home() {
               </div>
             </div>
           )}
+        </div>
+      </section>
+
+      <section className="impact-grid">
+        <div className="panel impact">
+          <div className="panel-heading">
+            <div><span className="step">07</span><h2>Business impact</h2></div>
+            <span className="panel-meta">MEASURED vs ESTIMATED</span>
+          </div>
+
+          <div className="impact-cols">
+            <div className="impact-col measured">
+              <span className="col-kicker measured-kicker">MEASURED (THIS RUN)</span>
+              <ul>
+                <li><span>Time to immunity</span><b>{immunityLabel}</b></li>
+                <li><span>Agents patched</span><b>{repair ? agentsPatched : "—"}</b></li>
+                <li><span>Tests run automatically</span><b>{testsAutomated || "—"}</b></li>
+                <li><span>Attack families closed</span><b>{repair ? `${attackFamiliesClosed} (${heldOutClosed} held-out)` : "—"}</b></li>
+                <li><span>Legit requests broken</span><b>{repair ? legitBroken : "—"}</b></li>
+              </ul>
+            </div>
+
+            <div className="impact-col estimated">
+              <div className="col-kicker-row">
+                <span className="col-kicker estimated-kicker">ESTIMATED</span>
+                <button className="assume-toggle" onClick={() => setShowAssumptions((v) => !v)}>
+                  edit assumptions {showAssumptions ? "▴" : "▾"}
+                </button>
+              </div>
+              <ul>
+                <li><span>Loss prevented</span><b>{repair ? `$${lossPrevented.toLocaleString()}` : "$—"}</b></li>
+                <li><span>Engineer hours saved</span><b>{repair ? `${hoursSaved.toFixed(1)} hrs` : "— hrs"}</b></li>
+                <li><span>Engineer $ saved</span><b>{repair ? `$${Math.round(engineerDollarsSaved).toLocaleString()}` : "$—"}</b></li>
+                <li><span>Customers not wrongly blocked</span><b>{repair ? falsePositivesAvoided : "—"}</b></li>
+              </ul>
+
+              {showAssumptions && (
+                <div className="assume-drawer">
+                  <label>VALUE AT RISK / RECORD ($)
+                    <input type="number" value={assumptions.valueAtRiskPerRecord}
+                      onChange={(e) => setAssumptions({ ...assumptions, valueAtRiskPerRecord: Number(e.target.value) || 0 })} />
+                  </label>
+                  <label>ENGINEER HOURLY RATE ($)
+                    <input type="number" value={assumptions.engineerHourlyRate}
+                      onChange={(e) => setAssumptions({ ...assumptions, engineerHourlyRate: Number(e.target.value) || 0 })} />
+                  </label>
+                  <label>MANUAL PATCH TIME (HRS) <span className="assume-note">team estimate</span>
+                    <input type="number" value={assumptions.manualPatchHours}
+                      onChange={(e) => setAssumptions({ ...assumptions, manualPatchHours: Number(e.target.value) || 0 })} />
+                  </label>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="formulas">
+            <span>Loss prevented = blocked actions × value at risk each</span>
+            <span>Hours saved = manual (triage + write + test + deploy) − Antibody automated time</span>
+            <span>Tests automated = attacks × benign cases × candidates evaluated</span>
+          </div>
         </div>
       </section>
 
