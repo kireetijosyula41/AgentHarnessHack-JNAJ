@@ -42,3 +42,18 @@ export {
   NoOpChangeError,
   OldValueMismatchError,
 } from "./applyPatch.ts";
+
+// Patch generation
+export { generatePatchCandidates } from "./generatePatches.ts";
+export { AlreadyRepairedError } from "./generatePatches.ts";
+
+// Patch selection
+export { selectPatch } from "./selectPatch.ts";
+export type { SelectionResult } from "./selectPatch.ts";
+export {
+  DuplicateCandidateError,
+  DuplicateEvaluationError,
+  InconsistentEvaluationError,
+  MissingEvaluationError,
+  NoValidPatchError,
+} from "./selectPatch.ts";
